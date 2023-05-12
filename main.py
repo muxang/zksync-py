@@ -287,11 +287,17 @@ def cross_to_arb(zksync_base_op: ZkSyncBaseOp):
         account.bridge_to_arb = tx_hash
         account.save()
 
-        # 随机等待1-5分钟
-        time.sleep(random.randint(60, 300))
-        # 注册arb交易哈希到multichain
-        register_tx_hash_to_multichain(address=address, tx_hash=tx_hash)
         break
+    # 随机等待1-5分钟
+    time.sleep(random.randint(60, 300))
+    while True:
+        try:
+            # 注册arb交易哈希到multichain
+            register_tx_hash_to_multichain(address=address, tx_hash=tx_hash)
+        except Exception as e:
+            main_error.error(f"注册arb交易哈希到multichain失败: {e}")
+            main_info.info(f"注册arb交易哈希到multichain失败, 60s后重试...")
+            time.sleep(60)
 
 def register_tx_hash_to_multichain(address, tx_hash: str):
     url = "https://scanapi.multichain.org/v2/reswaptxns"
@@ -432,7 +438,7 @@ def deposit_to_okx(arb_web3: Web3, signer: PrivateKeyEthSigner):
         except Exception as e:
             raise e
 
-proxy = "http://wukong01-zone-resi:li123123@pr.pyproxy.com:16666"
+proxy = "socks5h://14aaf50f772ac:5002a67487@212.236.124.130:44445"
 arb_rpc_url = EnvKey("ARB_MAIN_URL").key
 eth_rpc_url = EnvKey("ETH_MAIN_URL").key
 l2_rpc_url = EnvKey("ZKSYNC_MAIN_URL").key
@@ -457,7 +463,7 @@ if __name__ == "__main__":
     chain_id = zk_web3.zksync.chain_id
     main_info.info("获取链ID: {}".format(chain_id))
     # 初始化 Signers 类
-    index = 3
+    index = 8
     numbers = 2
     signers = Signers(mnemonic_words, index, numbers, chain_id)
     main_info.info(f"初始化Signers, 使用助记词从index: {index} 开始, 生成 {numbers} 个账户")
